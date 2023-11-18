@@ -11,7 +11,7 @@ public class Main extends Application {
 	public void start(Stage primaryStage) {
 		try {
 			BorderPane root = (BorderPane) FXMLLoader.load(getClass().getResource("Sample.fxml"));
-			Scene scene = new Scene(root, 400, 400);
+			Scene scene = new Scene(root, 600, 400);
 			primaryStage.setTitle("Task Manager");
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);

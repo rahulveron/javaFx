@@ -1,6 +1,15 @@
 package application;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -18,60 +27,74 @@ public class SampleController implements Initializable {
 
 	private TaskManager taskManager;
 
+	//Task file name(we can also give the path before the task name, to store the file on some specific location)
+	private static final String TASKS_FILE = "tasks.dat";
+
 	public SampleController() {
-     this.taskManager = new TaskManager();
- }
+		this.taskManager = new TaskManager();
+	}
 
 	@FXML
 	private void addTask() {
-		 System.out.println("Add Task button clicked");
-//		// Implement logic to add a new task to the list
-//		// For simplicity, let's assume the task name is provided externally
-//		Task newTask = new Task("Sample Task");
-//		taskManager.addTask(newTask);
-//		taskListView.getItems().add(newTask);
-		 TextInputDialog dialog = new TextInputDialog();
-	        dialog.setTitle("Add New Task");
-	        dialog.setHeaderText(null);
-	        dialog.setContentText("Enter task name:");
+		System.out.println("Add Task button clicked");
+		TextInputDialog dialog = new TextInputDialog();
+		dialog.setTitle("Add New Task");
+		dialog.setHeaderText(null);
+		dialog.setContentText("Enter task name:");
 
-	        Optional<String> result = dialog.showAndWait();
-	        if (result.isPresent()) {
-	            String taskName = result.get();
+		Optional<String> result = dialog.showAndWait();
+		if (result.isPresent()) {
+			String taskName = result.get();
 
-	            // For simplicity, you can also add a description input if needed
-	             TextInputDialog descriptionDialog = new TextInputDialog();
-	             descriptionDialog.setTitle("Add New Task");
-	             descriptionDialog.setHeaderText(null);
-	             descriptionDialog.setContentText("Enter task description:");
-	             Optional<String> descriptionResult = descriptionDialog.showAndWait();
-	             String taskDescription = descriptionResult.orElse("");
+			// Create a new task with the provided name and description
+			String timeStamp = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss").format(new Date());
+			Task newTask = new Task(taskName, timeStamp);
+			newTask.setTime(timeStamp);
+			taskManager.addTask(newTask);
+			taskListView.getItems().add(newTask);
 
-	            // Create a new task with the provided name and description
-	            Task newTask = new Task(taskName);
-	            taskManager.addTask(newTask);
-	            taskListView.getItems().add(newTask);
-	        }
+			saveTasks();
+		}
 	}
 
 	@FXML
 	private void markAsCompleted() {
-		 System.out.println("Mark as Completed button clicked");
+		System.out.println("Mark as Completed button clicked");
 		// Implement logic to mark the selected task as completed
 		Task selectedTask = taskListView.getSelectionModel().getSelectedItem();
 		if (selectedTask != null) {
 			selectedTask.setCompleted(true);
 			// Update the task list view
 			taskListView.refresh();
+			saveTasks();
 		}
 	}
 
-	
+	//To save task in a file
+	private void saveTasks() {
+		try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(TASKS_FILE))) {
+			oos.writeObject(taskManager.getTaskList());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	//Method to load task from the save file
+	private void loadTasks() {
+		try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(TASKS_FILE))) {
+			List<Task> loadedTasks = (List<Task>) ois.readObject();
+			taskManager.setTaskList(new ArrayList<>(loadedTasks));
+		} catch (IOException | ClassNotFoundException e) {
+			// Handle exceptions (e.g., file not found)
+		}
+	}
+
 	@Override
 	public void initialize(URL url, ResourceBundle resourceBundle) {
-	    System.out.println("Controller initialized.");
-	    System.out.println("Task List View items: " + taskListView.getItems());
-	    ObservableList<Task> observableTaskList = FXCollections.observableArrayList(taskManager.getTaskList());
-        taskListView.setItems(observableTaskList);
+		System.out.println("Controller initialized.");
+		System.out.println("Task List View items: " + taskListView.getItems());
+		loadTasks();
+		ObservableList<Task> observableTaskList = FXCollections.observableArrayList(taskManager.getTaskList());
+		taskListView.setItems(observableTaskList);
 	}
 }
